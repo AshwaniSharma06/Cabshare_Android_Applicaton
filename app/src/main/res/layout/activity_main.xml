@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CabShare"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="48dp"/>
+
+    <Button
+        android:id="@+id/btnCreateTrip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Create a Trip"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"/>
+
+    <Button
+        android:id="@+id/btnFindTrip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Find a Trip"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+    <Button
+        android:id="@+id/btnProfile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="My Profile"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        android:layout_marginTop="32dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+</LinearLayout>

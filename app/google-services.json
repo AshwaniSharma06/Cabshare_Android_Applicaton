@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "125141857738",
+    "project_id": "cabshare-43b75",
+    "storage_bucket": "cabshare-43b75.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125141857738:android:eb74f6a36688144d4acb33",
+        "android_client_info": {
+          "package_name": "com.example.cabshare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBywzyEoxTlrEAb-fv_wiLQ7O-IoHEjsIM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
