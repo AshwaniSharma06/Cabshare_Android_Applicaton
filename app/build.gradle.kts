@@ -49,6 +49,15 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.storage.ktx)
+
+    // Maps & Location
+    implementation(libs.play.services.maps)
+    implementation(libs.play.services.location)
+
+    // Image Loading
+    implementation(libs.glide)
+    annotationProcessor(libs.glide.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

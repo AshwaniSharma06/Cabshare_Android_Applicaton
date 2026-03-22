@@ -18,6 +18,7 @@ class TripAdapter(private var trips: List<Trip>, private val onContactClick: (Tr
 
     override fun onBindViewHolder(holder: TripViewHolder, position: Int) {
         val trip = trips[position]
+        holder.binding.tvTripStarting.text = trip.startingLocation
         holder.binding.tvTripDestination.text = trip.destination
         holder.binding.tvTripUser.text = "Posted by: ${trip.userName}"
         holder.binding.tvTripDate.text = trip.date

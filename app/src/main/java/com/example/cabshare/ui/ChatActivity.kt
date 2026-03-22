@@ -1,6 +1,7 @@
 package com.example.cabshare.ui
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +19,7 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var adapter: ChatAdapter
     private var messages = mutableListOf<Message>()
     private var receiverId: String? = null
+    private var isInitialLoad = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,22 +54,38 @@ class ChatActivity : AppCompatActivity() {
         val senderId = auth.currentUser?.uid ?: return
         val message = Message(senderId, receiverId!!, text)
         
+        // Optionally disable send button while sending
+        binding.btnSend.isEnabled = false
         db.collection("messages").add(message)
             .addOnSuccessListener {
                 binding.etMessage.text.clear()
+                binding.btnSend.isEnabled = true
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to send message", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                binding.btnSend.isEnabled = true
+                Toast.makeText(this, "Failed to send: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun listenForMessages() {
         val currentUserId = auth.currentUser?.uid ?: return
         
+        if (isInitialLoad) {
+            showLoading(true)
+        }
+
         db.collection("messages")
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, e ->
-                if (e != null) return@addSnapshotListener
+                if (isInitialLoad) {
+                    showLoading(false)
+                    isInitialLoad = false
+                }
+
+                if (e != null) {
+                    Toast.makeText(this, "Error loading messages", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
+                }
                 
                 if (snapshot != null) {
                     messages.clear()
@@ -80,8 +98,14 @@ class ChatActivity : AppCompatActivity() {
                         }
                     }
                     adapter.updateMessages(messages)
-                    binding.rvMessages.scrollToPosition(messages.size - 1)
+                    if (messages.isNotEmpty()) {
+                        binding.rvMessages.scrollToPosition(messages.size - 1)
+                    }
                 }
             }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 }

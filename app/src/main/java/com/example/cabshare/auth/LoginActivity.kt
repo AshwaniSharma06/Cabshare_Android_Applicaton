@@ -2,6 +2,8 @@ package com.example.cabshare.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Patterns
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cabshare.MainActivity
@@ -26,12 +28,14 @@ class LoginActivity : AppCompatActivity() {
         }
 
         binding.btnLogin.setOnClickListener {
-            val email = binding.etEmail.text.toString()
-            val password = binding.etPassword.text.toString()
+            val email = binding.etEmail.text.toString().trim()
+            val password = binding.etPassword.text.toString().trim()
 
-            if (email.isNotEmpty() && password.isNotEmpty()) {
+            if (validateInput(email, password)) {
+                showLoading(true)
                 auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
+                        showLoading(false)
                         if (task.isSuccessful) {
                             startActivity(Intent(this, MainActivity::class.java))
                             finish()
@@ -39,13 +43,38 @@ class LoginActivity : AppCompatActivity() {
                             Toast.makeText(this, "Login Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
-            } else {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             }
         }
 
         binding.tvSignupLink.setOnClickListener {
             startActivity(Intent(this, SignupActivity::class.java))
         }
+    }
+
+    private fun validateInput(email: String, password: String): Boolean {
+        if (email.isEmpty()) {
+            binding.etEmail.error = "Email is required"
+            return false
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.etEmail.error = "Enter a valid email"
+            return false
+        }
+        if (password.isEmpty()) {
+            binding.etPassword.error = "Password is required"
+            return false
+        }
+        if (password.length < 6) {
+            binding.etPassword.error = "Password must be at least 6 characters"
+            return false
+        }
+        return true
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.btnLogin.isEnabled = !isLoading
+        binding.etEmail.isEnabled = !isLoading
+        binding.etPassword.isEnabled = !isLoading
     }
 }

@@ -2,6 +2,7 @@ package com.example.cabshare.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -9,12 +10,15 @@ import com.example.cabshare.adapter.TripAdapter
 import com.example.cabshare.databinding.ActivityFindTripBinding
 import com.example.cabshare.model.Trip
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 
 class FindTripActivity : AppCompatActivity() {
     private lateinit var binding: ActivityFindTripBinding
     private lateinit var db: FirebaseFirestore
     private lateinit var adapter: TripAdapter
     private var allTrips = mutableListOf<Trip>()
+    private var tripListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,24 +28,16 @@ class FindTripActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
 
         setupRecyclerView()
-        fetchTrips()
+        startListeningForTrips()
 
         binding.btnSearch.setOnClickListener {
             val query = binding.etSearchDestination.text.toString().trim()
-            if (query.isNotEmpty()) {
-                val filteredList = allTrips.filter { 
-                    it.destination.contains(query, ignoreCase = true) 
-                }
-                adapter.updateList(filteredList)
-            } else {
-                adapter.updateList(allTrips)
-            }
+            filterTrips(query)
         }
     }
 
     private fun setupRecyclerView() {
         adapter = TripAdapter(mutableListOf()) { trip ->
-            // Step 9: Open Chat with user
             val intent = Intent(this, ChatActivity::class.java)
             intent.putExtra("receiverId", trip.userId)
             intent.putExtra("receiverName", trip.userName)
@@ -51,18 +47,64 @@ class FindTripActivity : AppCompatActivity() {
         binding.rvTrips.adapter = adapter
     }
 
-    private fun fetchTrips() {
-        db.collection("trips").get()
-            .addOnSuccessListener { documents ->
-                allTrips.clear()
-                for (document in documents) {
-                    val trip = document.toObject(Trip::class.java)
-                    allTrips.add(trip)
+    private fun startListeningForTrips() {
+        showLoading(true)
+        // Using snapshot listener for real-time updates
+        tripListener = db.collection("trips")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, e ->
+                showLoading(false)
+                if (e != null) {
+                    Toast.makeText(this, "Error loading trips: ${e.message}", Toast.LENGTH_SHORT).show()
+                    return@addSnapshotListener
                 }
-                adapter.updateList(allTrips)
+
+                if (snapshot != null) {
+                    allTrips.clear()
+                    for (document in snapshot.documents) {
+                        val trip = document.toObject(Trip::class.java)
+                        if (trip != null) {
+                            allTrips.add(trip)
+                        }
+                    }
+                    // Re-apply filter if user has searched for something
+                    val query = binding.etSearchDestination.text.toString().trim()
+                    filterTrips(query)
+                }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Failed to load trips", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun filterTrips(query: String) {
+        val filteredList = if (query.isNotEmpty()) {
+            allTrips.filter { 
+                it.destination.contains(query, ignoreCase = true) 
             }
+        } else {
+            allTrips
+        }
+        updateUI(filteredList)
+    }
+
+    private fun updateUI(trips: List<Trip>) {
+        adapter.updateList(trips)
+        if (trips.isEmpty()) {
+            binding.tvEmptyState.visibility = View.VISIBLE
+            binding.rvTrips.visibility = View.GONE
+        } else {
+            binding.tvEmptyState.visibility = View.GONE
+            binding.rvTrips.visibility = View.VISIBLE
+        }
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        binding.btnSearch.isEnabled = !isLoading
+        binding.etSearchDestination.isEnabled = !isLoading
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Stop listening when activity is destroyed to save battery/data
+        tripListener?.remove()
     }
 }
