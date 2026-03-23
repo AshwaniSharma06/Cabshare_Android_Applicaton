@@ -6,6 +6,7 @@ import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -57,6 +58,8 @@ class CreateTripActivity : AppCompatActivity() {
         db = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
+        setupSeatSpinner()
+
         binding.btnOpenMapPickup.setOnClickListener {
             val intent = Intent(this, SelectLocationActivity::class.java)
             selectPickupLauncher.launch(intent)
@@ -89,6 +92,7 @@ class CreateTripActivity : AppCompatActivity() {
             val startingLoc = binding.etStartingLocation.text.toString().trim()
             val destination = binding.etDestination.text.toString().trim()
             val fare = binding.etFare.text.toString().trim()
+            val seats = binding.spinnerSeats.selectedItem.toString().toInt()
             
             if (validateInput(startingLoc, destination, fare)) {
                 showLoading(true)
@@ -108,7 +112,9 @@ class CreateTripActivity : AppCompatActivity() {
                     destLng = destLng,
                     date = selectedDate,
                     time = selectedTime,
-                    fare = fare
+                    fare = fare,
+                    totalSeats = seats,
+                    availableSeats = seats
                 )
                 
                 db.collection("trips").document(tripId).set(trip)
@@ -123,6 +129,14 @@ class CreateTripActivity : AppCompatActivity() {
                     }
             }
         }
+    }
+
+    private fun setupSeatSpinner() {
+        val seatOptions = arrayOf("1", "2", "3", "4", "5", "6")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seatOptions)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerSeats.adapter = adapter
+        binding.spinnerSeats.setSelection(3) // Default to 4 seats
     }
 
     private fun validateInput(startingLoc: String, destination: String, fare: String): Boolean {

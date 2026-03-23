@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cabshare.adapter.TripAdapter
 import com.example.cabshare.databinding.ActivityFindTripBinding
 import com.example.cabshare.model.Trip
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -16,6 +18,7 @@ import com.google.firebase.firestore.Query
 class FindTripActivity : AppCompatActivity() {
     private lateinit var binding: ActivityFindTripBinding
     private lateinit var db: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
     private lateinit var adapter: TripAdapter
     private var allTrips = mutableListOf<Trip>()
     private var tripListener: ListenerRegistration? = null
@@ -26,6 +29,7 @@ class FindTripActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         db = FirebaseFirestore.getInstance()
+        auth = FirebaseAuth.getInstance()
 
         setupRecyclerView()
         startListeningForTrips()
@@ -37,19 +41,51 @@ class FindTripActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = TripAdapter(mutableListOf()) { trip ->
-            val intent = Intent(this, ChatActivity::class.java)
-            intent.putExtra("receiverId", trip.userId)
-            intent.putExtra("receiverName", trip.userName)
-            startActivity(intent)
-        }
+        adapter = TripAdapter(
+            trips = mutableListOf(),
+            onJoinClick = { trip ->
+                joinTrip(trip)
+            },
+            onChatClick = { trip ->
+                val intent = Intent(this, ChatActivity::class.java)
+                intent.putExtra("receiverId", trip.userId)
+                intent.putExtra("receiverName", trip.userName)
+                startActivity(intent)
+            }
+        )
         binding.rvTrips.layoutManager = LinearLayoutManager(this)
         binding.rvTrips.adapter = adapter
     }
 
+    private fun joinTrip(trip: Trip) {
+        val currentUserId = auth.currentUser?.uid ?: return
+        
+        showLoading(true)
+        val tripRef = db.collection("trips").document(trip.tripId)
+        
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(tripRef)
+            val availableSeats = snapshot.getLong("availableSeats") ?: 0
+            val passengers = snapshot.get("passengers") as? List<*> ?: emptyList<String>()
+            
+            if (availableSeats > 0 && !passengers.contains(currentUserId)) {
+                transaction.update(tripRef, "availableSeats", availableSeats - 1)
+                transaction.update(tripRef, "passengers", FieldValue.arrayUnion(currentUserId))
+                null
+            } else {
+                throw Exception("No seats available or already joined")
+            }
+        }.addOnSuccessListener {
+            showLoading(false)
+            Toast.makeText(this, "Successfully joined the trip!", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { e ->
+            showLoading(false)
+            Toast.makeText(this, "Failed to join: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun startListeningForTrips() {
         showLoading(true)
-        // Using snapshot listener for real-time updates
         tripListener = db.collection("trips")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, e ->
@@ -67,7 +103,6 @@ class FindTripActivity : AppCompatActivity() {
                             allTrips.add(trip)
                         }
                     }
-                    // Re-apply filter if user has searched for something
                     val query = binding.etSearchDestination.text.toString().trim()
                     filterTrips(query)
                 }
@@ -77,7 +112,8 @@ class FindTripActivity : AppCompatActivity() {
     private fun filterTrips(query: String) {
         val filteredList = if (query.isNotEmpty()) {
             allTrips.filter { 
-                it.destination.contains(query, ignoreCase = true) 
+                it.destination.contains(query, ignoreCase = true) || 
+                it.startingLocation.contains(query, ignoreCase = true)
             }
         } else {
             allTrips
@@ -98,13 +134,10 @@ class FindTripActivity : AppCompatActivity() {
 
     private fun showLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        binding.btnSearch.isEnabled = !isLoading
-        binding.etSearchDestination.isEnabled = !isLoading
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Stop listening when activity is destroyed to save battery/data
         tripListener?.remove()
     }
 }

@@ -89,8 +89,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Date"
-                android:drawablePadding="4dp" />
+                android:text="Date" />
 
             <TextView
                 android:id="@+id/tvTripTime"
@@ -116,13 +115,21 @@
                 android:textStyle="bold"
                 android:textSize="16sp" />
 
-            <Button
-                android:id="@+id/btnJoinTrip"
+            <TextView
+                android:id="@+id/tvTripSeats"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="View Details"
-                style="@style/Widget.MaterialComponents.Button.TextButton" />
+                android:text="Seats: 4/4"
+                android:textColor="#2196F3"
+                android:textStyle="bold" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnJoinTrip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Join Trip" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

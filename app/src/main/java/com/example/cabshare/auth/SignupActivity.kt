@@ -4,9 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cabshare.MainActivity
+import com.example.cabshare.R
 import com.example.cabshare.databinding.ActivitySignupBinding
 import com.example.cabshare.model.User
 import com.google.firebase.auth.FirebaseAuth
@@ -24,6 +26,9 @@ class SignupActivity : AppCompatActivity() {
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
+
+        // Apply Premium Animations
+        applyAnimations()
 
         binding.btnSignup.setOnClickListener {
             val name = binding.etName.text.toString().trim()
@@ -43,7 +48,7 @@ class SignupActivity : AppCompatActivity() {
                                 .addOnSuccessListener {
                                     showLoading(false)
                                     startActivity(Intent(this, MainActivity::class.java))
-                                    finish()
+                                    finishAffinity() // Clear activity stack
                                 }
                                 .addOnFailureListener { e ->
                                     showLoading(false)
@@ -59,38 +64,60 @@ class SignupActivity : AppCompatActivity() {
 
         binding.tvLoginLink.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
+            finish()
         }
     }
 
+    private fun applyAnimations() {
+        val fadeIn = AnimationUtils.loadAnimation(this, android.R.anim.fade_in)
+        binding.root.startAnimation(fadeIn)
+
+        val slideUp = AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left)
+        binding.logoSection.startAnimation(slideUp)
+        binding.tvTitle.startAnimation(slideUp)
+        binding.tvSubtitle.startAnimation(slideUp)
+    }
+
     private fun validateInput(name: String, email: String, password: String): Boolean {
+        var isValid = true
+
         if (name.isEmpty()) {
-            binding.etName.error = "Name is required"
-            return false
+            binding.tilName.error = "Name is required"
+            isValid = false
+        } else {
+            binding.tilName.error = null
         }
+
         if (email.isEmpty()) {
-            binding.etEmail.error = "Email is required"
-            return false
+            binding.tilEmail.error = "Email is required"
+            isValid = false
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.tilEmail.error = "Enter a valid email"
+            isValid = false
+        } else {
+            binding.tilEmail.error = null
         }
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.etEmail.error = "Enter a valid email"
-            return false
-        }
+
         if (password.isEmpty()) {
-            binding.etPassword.error = "Password is required"
-            return false
+            binding.tilPassword.error = "Password is required"
+            isValid = false
+        } else if (password.length < 6) {
+            binding.tilPassword.error = "Password must be at least 6 characters"
+            isValid = false
+        } else {
+            binding.tilPassword.error = null
         }
-        if (password.length < 6) {
-            binding.etPassword.error = "Password must be at least 6 characters"
-            return false
-        }
-        return true
+
+        return isValid
     }
 
     private fun showLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.btnSignup.isEnabled = !isLoading
-        binding.etName.isEnabled = !isLoading
-        binding.etEmail.isEnabled = !isLoading
-        binding.etPassword.isEnabled = !isLoading
+        binding.btnSignup.alpha = if (isLoading) 0.5f else 1.0f
+        
+        binding.tilName.isEnabled = !isLoading
+        binding.tilEmail.isEnabled = !isLoading
+        binding.tilPassword.isEnabled = !isLoading
     }
 }

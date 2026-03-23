@@ -6,5 +6,6 @@ data class User(
     val email: String = "",
     val rating: Float = 5.0f,
     val profileImageUrl: String? = null,
-    val bio: String = ""
+    val bio: String = "",
+    val fcmToken: String = ""
 )

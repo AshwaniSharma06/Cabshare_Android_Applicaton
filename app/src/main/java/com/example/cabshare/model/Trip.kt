@@ -13,5 +13,8 @@ data class Trip(
     val date: String = "",
     val time: String = "",
     val fare: String = "",
+    val totalSeats: Int = 4,
+    val availableSeats: Int = 4,
+    val passengers: List<String> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
 )

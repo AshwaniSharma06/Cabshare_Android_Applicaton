@@ -59,7 +59,7 @@
         android:id="@+id/btnCreateTrip"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Create a Trip"
+        android:text="Post a Trip"
         android:layout_marginBottom="16dp"
         android:padding="16dp"/>
 
@@ -68,6 +68,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Find a Trip"
+        android:layout_marginBottom="16dp"
+        android:padding="16dp"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+
+    <Button
+        android:id="@+id/btnMyTrips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="My Bookings"
         android:layout_marginBottom="16dp"
         android:padding="16dp"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
