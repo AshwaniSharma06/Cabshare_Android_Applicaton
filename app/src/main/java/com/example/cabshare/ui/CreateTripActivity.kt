@@ -6,20 +6,18 @@ import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cabshare.databinding.ActivityCreateTripBinding
-import com.example.cabshare.model.Trip
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.cabshare.viewmodel.CreateTripViewModel
 import java.util.*
 
 class CreateTripActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCreateTripBinding
-    private lateinit var db: FirebaseFirestore
-    private lateinit var auth: FirebaseAuth
+    private val viewModel: CreateTripViewModel by viewModels()
+    
     private var selectedDate = ""
     private var selectedTime = ""
     
@@ -55,119 +53,107 @@ class CreateTripActivity : AppCompatActivity() {
         binding = ActivityCreateTripBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = FirebaseFirestore.getInstance()
-        auth = FirebaseAuth.getInstance()
+        setupObservers()
+        setupListeners()
+        viewModel.fetchCurrentUser()
+    }
 
-        setupSeatSpinner()
+    private fun setupObservers() {
+        viewModel.isLoading.observe(this) { isLoading ->
+            showLoading(isLoading)
+        }
 
-        binding.btnOpenMapPickup.setOnClickListener {
+        viewModel.tripPosted.observe(this) { posted ->
+            if (posted) {
+                Toast.makeText(this, "Trip Posted Successfully!", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+
+        viewModel.error.observe(this) { errorMsg ->
+            errorMsg?.let {
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                viewModel.clearError()
+            }
+        }
+    }
+
+    private fun setupListeners() {
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
+        binding.etStartingLocation.setOnClickListener {
             val intent = Intent(this, SelectLocationActivity::class.java)
+            intent.putExtra("hint", "Select Pickup")
             selectPickupLauncher.launch(intent)
         }
 
-        binding.btnOpenMapDest.setOnClickListener {
+        binding.etDestination.setOnClickListener {
             val intent = Intent(this, SelectLocationActivity::class.java)
+            intent.putExtra("hint", "Select Destination")
             selectDestLauncher.launch(intent)
         }
-
-        binding.btnPickDate.setOnClickListener {
+        
+        binding.etDate.setOnClickListener {
             val c = Calendar.getInstance()
             DatePickerDialog(this, { _, year, month, day ->
-                selectedDate = "$day/${month + 1}/$year"
-                binding.tvSelectedDate.text = selectedDate
-                binding.tvSelectedDate.error = null
+                selectedDate = String.format("%02d/%02d/%d", day, month + 1, year)
+                binding.etDate.setText(selectedDate)
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
 
-        binding.btnPickTime.setOnClickListener {
+        binding.etTime.setOnClickListener {
             val c = Calendar.getInstance()
             TimePickerDialog(this, { _, hour, minute ->
                 selectedTime = String.format("%02d:%02d", hour, minute)
-                binding.tvSelectedTime.text = selectedTime
-                binding.tvSelectedTime.error = null
+                binding.etTime.setText(selectedTime)
             }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show()
         }
 
         binding.btnSubmitTrip.setOnClickListener {
-            val startingLoc = binding.etStartingLocation.text.toString().trim()
-            val destination = binding.etDestination.text.toString().trim()
-            val fare = binding.etFare.text.toString().trim()
-            val seats = binding.spinnerSeats.selectedItem.toString().toInt()
-            
-            if (validateInput(startingLoc, destination, fare)) {
-                showLoading(true)
-                val userId = auth.currentUser?.uid ?: ""
-                val userName = auth.currentUser?.displayName ?: "User"
-
-                val tripId = db.collection("trips").document().id
-                val trip = Trip(
-                    tripId = tripId,
-                    userId = userId,
-                    userName = userName,
-                    startingLocation = startingLoc,
-                    destination = destination,
-                    pickupLat = pickupLat,
-                    pickupLng = pickupLng,
-                    destLat = destLat,
-                    destLng = destLng,
-                    date = selectedDate,
-                    time = selectedTime,
-                    fare = fare,
-                    totalSeats = seats,
-                    availableSeats = seats
-                )
-                
-                db.collection("trips").document(tripId).set(trip)
-                    .addOnSuccessListener {
-                        showLoading(false)
-                        Toast.makeText(this, "Trip Posted Successfully!", Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
-                    .addOnFailureListener { e ->
-                        showLoading(false)
-                        Toast.makeText(this, "Error posting trip: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-            }
+            submitTrip()
         }
     }
 
-    private fun setupSeatSpinner() {
-        val seatOptions = arrayOf("1", "2", "3", "4", "5", "6")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, seatOptions)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerSeats.adapter = adapter
-        binding.spinnerSeats.setSelection(3) // Default to 4 seats
+    private fun submitTrip() {
+        val startingLoc = binding.etStartingLocation.text.toString().trim()
+        val destination = binding.etDestination.text.toString().trim()
+        val fare = binding.etFare.text.toString().trim()
+        val seatsStr = binding.etSeats.text.toString().trim()
+        
+        if (validateInput(startingLoc, destination, fare, seatsStr)) {
+            viewModel.submitTrip(
+                startingLoc, destination, pickupLat, pickupLng, 
+                destLat, destLng, selectedDate, selectedTime, fare, seatsStr
+            )
+        }
     }
 
-    private fun validateInput(startingLoc: String, destination: String, fare: String): Boolean {
+    private fun validateInput(startingLoc: String, destination: String, fare: String, seats: String): Boolean {
         var isValid = true
 
         if (startingLoc.isEmpty()) {
-            binding.etStartingLocation.error = "Starting location is required"
+            binding.etStartingLocation.error = "Required"
             isValid = false
         }
         if (destination.isEmpty()) {
-            binding.etDestination.error = "Destination is required"
+            binding.etDestination.error = "Required"
             isValid = false
         }
         if (selectedDate.isEmpty()) {
-            binding.tvSelectedDate.error = "Please select a date"
+            binding.etDate.error = "Required"
             isValid = false
         }
         if (selectedTime.isEmpty()) {
-            binding.tvSelectedTime.error = "Please select a time"
+            binding.etTime.error = "Required"
             isValid = false
         }
         if (fare.isEmpty()) {
-            binding.etFare.error = "Fare is required"
+            binding.etFare.error = "Required"
             isValid = false
-        } else {
-            try {
-                fare.toDouble()
-            } catch (e: NumberFormatException) {
-                binding.etFare.error = "Enter a valid amount"
-                isValid = false
-            }
+        }
+        if (seats.isEmpty()) {
+            binding.etSeats.error = "Required"
+            isValid = false
         }
 
         return isValid
@@ -176,10 +162,5 @@ class CreateTripActivity : AppCompatActivity() {
     private fun showLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         binding.btnSubmitTrip.isEnabled = !isLoading
-        binding.etStartingLocation.isEnabled = !isLoading
-        binding.etDestination.isEnabled = !isLoading
-        binding.etFare.isEnabled = !isLoading
-        binding.btnPickDate.isEnabled = !isLoading
-        binding.btnPickTime.isEnabled = !isLoading
     }
 }

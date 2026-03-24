@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F8F9FA"
     tools:context=".ui.TripDetailActivity">
 
     <androidx.fragment.app.FragmentContainerView
@@ -14,34 +15,92 @@
         app:layout_constraintBottom_toTopOf="@+id/card_trip_info"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnBack"
+        style="@style/Widget.MaterialComponents.Button.Icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:padding="0dp"
+        app:backgroundTint="#FFFFFF"
+        app:cornerRadius="24dp"
+        app:elevation="8dp"
+        app:icon="@drawable/abc_ic_ab_back_material"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:iconSize="24dp"
+        app:iconTint="@color/primaryColor"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_trip_info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
-            <TextView
-                android:id="@+id/tv_detail_user"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Posted by: Name"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivDetailDriverImage"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_default_profile"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.CornerSize50Percent" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_toEndOf="@id/ivDetailDriverImage"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_detail_user"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Driver Name"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDetailDriverRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⭐ 4.8"
+                        android:textColor="@color/gray_text"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_detail_chat"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:text="Chat"
+                    app:icon="@android:drawable/stat_notify_chat" />
+            </RelativeLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginVertical="8dp"
-                android:background="#DDDDDD" />
+                android:layout_marginVertical="16dp"
+                android:background="#EEEEEE" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -52,41 +111,43 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@android:drawable/ic_menu_myplaces"
-                    app:tint="@color/teal_700" />
+                    app:tint="@color/primaryColor" />
 
                 <TextView
                     android:id="@+id/tv_detail_pickup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Pickup Location" />
+                    android:layout_marginStart="12dp"
+                    android:text="Pickup Point"
+                    android:textColor="@color/black" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@android:drawable/ic_menu_directions"
-                    app:tint="@color/purple_500" />
+                    app:tint="@color/accentColor" />
 
                 <TextView
                     android:id="@+id/tv_detail_destination"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Destination Location" />
+                    android:layout_marginStart="12dp"
+                    android:text="Destination Point"
+                    android:textColor="@color/black" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginVertical="8dp"
-                android:background="#DDDDDD" />
+                android:layout_marginVertical="16dp"
+                android:background="#EEEEEE" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -94,29 +155,62 @@
                 android:orientation="horizontal"
                 android:weightSum="2">
 
-                <TextView
-                    android:id="@+id/tv_detail_datetime"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Date &amp; Time" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_detail_fare"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Total Fare"
+                        android:textColor="@color/gray_text"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_detail_fare"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₹0"
+                        android:textColor="@color/black"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Fare: ₹0"
-                    android:textAlignment="viewEnd"
-                    android:textStyle="bold" />
+                    android:gravity="end"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fare per person"
+                        android:textColor="@color/gray_text"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvFareSplit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₹0"
+                        android:textColor="@color/primaryColor"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_detail_chat"
+                android:id="@+id/btnCompleteTrip"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Chat with Driver" />
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:text="Trip Completed"
+                android:visibility="gone"
+                app:cornerRadius="16dp" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>

@@ -32,6 +32,7 @@ class ChatAdapter(private var messages: List<Message>) : RecyclerView.Adapter<Re
         val message = messages[position]
         if (holder is SentViewHolder) {
             holder.binding.tvMessage.text = message.message
+            holder.binding.tvStatus.text = if (message.seen) "Seen" else "Sent"
         } else if (holder is ReceivedViewHolder) {
             holder.binding.tvMessage.text = message.message
         }

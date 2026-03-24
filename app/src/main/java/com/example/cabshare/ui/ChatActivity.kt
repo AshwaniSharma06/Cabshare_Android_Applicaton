@@ -1,111 +1,93 @@
 package com.example.cabshare.ui
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cabshare.adapter.ChatAdapter
 import com.example.cabshare.databinding.ActivityChatBinding
-import com.example.cabshare.model.Message
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.example.cabshare.viewmodel.ChatViewModel
 
 class ChatActivity : AppCompatActivity() {
     private lateinit var binding: ActivityChatBinding
-    private lateinit var db: FirebaseFirestore
-    private lateinit var auth: FirebaseAuth
+    private val viewModel: ChatViewModel by viewModels()
     private lateinit var adapter: ChatAdapter
-    private var messages = mutableListOf<Message>()
-    private var receiverId: String? = null
-    private var isInitialLoad = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        db = FirebaseFirestore.getInstance()
-        auth = FirebaseAuth.getInstance()
-        receiverId = intent.getStringExtra("receiverId")
+        val receiverId = intent.getStringExtra("receiverId")
         val receiverName = intent.getStringExtra("receiverName")
 
+        if (receiverId == null) {
+            finish()
+            return
+        }
+
         supportActionBar?.title = receiverName ?: "Chat"
+        binding.tvReceiverName.text = receiverName ?: "Chat"
+
+        viewModel.initChat(receiverId)
 
         setupRecyclerView()
-        listenForMessages()
-
-        binding.btnSend.setOnClickListener {
-            val text = binding.etMessage.text.toString().trim()
-            if (text.isNotEmpty() && receiverId != null) {
-                sendMessage(text)
-            }
-        }
+        setupObservers()
+        setupListeners()
     }
 
     private fun setupRecyclerView() {
-        adapter = ChatAdapter(messages)
+        adapter = ChatAdapter(mutableListOf())
         binding.rvMessages.layoutManager = LinearLayoutManager(this)
         binding.rvMessages.adapter = adapter
     }
 
-    private fun sendMessage(text: String) {
-        val senderId = auth.currentUser?.uid ?: return
-        val message = Message(senderId, receiverId!!, text)
-        
-        // Optionally disable send button while sending
-        binding.btnSend.isEnabled = false
-        db.collection("messages").add(message)
-            .addOnSuccessListener {
-                binding.etMessage.text.clear()
-                binding.btnSend.isEnabled = true
+    private fun setupObservers() {
+        viewModel.messages.observe(this) { messages ->
+            adapter.updateMessages(messages)
+            if (messages.isNotEmpty()) {
+                binding.rvMessages.scrollToPosition(messages.size - 1)
             }
-            .addOnFailureListener { e ->
-                binding.btnSend.isEnabled = true
-                Toast.makeText(this, "Failed to send: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun listenForMessages() {
-        val currentUserId = auth.currentUser?.uid ?: return
-        
-        if (isInitialLoad) {
-            showLoading(true)
         }
 
-        db.collection("messages")
-            .orderBy("timestamp", Query.Direction.ASCENDING)
-            .addSnapshotListener { snapshot, e ->
-                if (isInitialLoad) {
-                    showLoading(false)
-                    isInitialLoad = false
-                }
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
 
-                if (e != null) {
-                    Toast.makeText(this, "Error loading messages", Toast.LENGTH_SHORT).show()
-                    return@addSnapshotListener
-                }
-                
-                if (snapshot != null) {
-                    messages.clear()
-                    for (doc in snapshot.documents) {
-                        val msg = doc.toObject(Message::class.java)
-                        if (msg != null && 
-                            ((msg.senderId == currentUserId && msg.receiverId == receiverId) || 
-                             (msg.senderId == receiverId && msg.receiverId == currentUserId))) {
-                            messages.add(msg)
-                        }
-                    }
-                    adapter.updateMessages(messages)
-                    if (messages.isNotEmpty()) {
-                        binding.rvMessages.scrollToPosition(messages.size - 1)
-                    }
-                }
+        viewModel.typingStatus.observe(this) { isTyping ->
+            binding.tvTypingStatus.visibility = if (isTyping) View.VISIBLE else View.GONE
+        }
+
+        viewModel.error.observe(this) { errorMsg ->
+            errorMsg?.let {
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                viewModel.clearError()
             }
+        }
     }
 
-    private fun showLoading(isLoading: Boolean) {
-        binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+    private fun setupListeners() {
+        binding.btnBack.setOnClickListener { finish() }
+
+        binding.btnSend.setOnClickListener {
+            val text = binding.etMessage.text.toString().trim()
+            if (text.isNotEmpty()) {
+                viewModel.sendMessage(text)
+                binding.etMessage.text.clear()
+                viewModel.updateTypingStatus(false)
+            }
+        }
+
+        binding.etMessage.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                viewModel.updateTypingStatus(s?.isNotEmpty() == true)
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 }

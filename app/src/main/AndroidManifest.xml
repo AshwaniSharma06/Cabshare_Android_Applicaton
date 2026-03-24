@@ -30,7 +30,7 @@
         </service>
         
         <activity
-            android:name=".auth.LoginActivity"
+            android:name=".ui.SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,6 +38,7 @@
             </intent-filter>
         </activity>
         
+        <activity android:name=".auth.LoginActivity" />
         <activity android:name=".auth.SignupActivity" android:label="Signup" />
         <activity android:name=".MainActivity" android:label="Home" />
         <activity android:name=".ui.CreateTripActivity" android:label="Create Trip" />

@@ -1,148 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#F8F9FA">
 
-    <ScrollView
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@android:drawable/ic_menu_revert"
+            app:title="Post a Trip"
+            app:titleTextColor="@color/black" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="20dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Post a Trip"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="32dp"/>
-
-            <!-- Starting Location -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Starting Location"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp"/>
-
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
 
-                <EditText
-                    android:id="@+id/etStartingLocation"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Pick-up Point" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <ImageButton
-                    android:id="@+id/btnOpenMapPickup"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:src="@android:drawable/ic_dialog_map"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Select pickup on map" />
-            </LinearLayout>
+                    <!-- Pickup -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/PremiumEditTextStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Pickup Point"
+                        app:startIconDrawable="@android:drawable/ic_menu_mylocation"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/ic_dialog_map">
 
-            <!-- Destination -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Destination"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp"/>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etStartingLocation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="24dp">
+                    <!-- Destination -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/PremiumEditTextStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="Destination"
+                        app:startIconDrawable="@android:drawable/ic_menu_directions"
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@android:drawable/ic_dialog_map">
 
-                <EditText
-                    android:id="@+id/etDestination"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Drop-off Point" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etDestination"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <ImageButton
-                    android:id="@+id/btnOpenMapDest"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:src="@android:drawable/ic_dialog_map"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Select destination on map" />
-            </LinearLayout>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="20dp"
+                        android:background="#EEEEEE" />
 
-            <!-- Available Seats -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Available Seats"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
-            <Spinner
-                android:id="@+id/spinnerSeats"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/PremiumEditTextStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Date"
+                            app:startIconDrawable="@android:drawable/ic_menu_today">
 
-            <Button
-                android:id="@+id/btnPickDate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Select Date"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_marginBottom="8dp"/>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etDate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView
-                android:id="@+id/tvSelectedDate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No date selected"
-                android:layout_marginBottom="16dp"/>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/PremiumEditTextStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
+                            android:hint="Time"
+                            app:startIconDrawable="@android:drawable/ic_menu_recent_history">
 
-            <Button
-                android:id="@+id/btnPickTime"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Select Time"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_marginBottom="8dp"/>
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etTime"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:focusable="false"
+                                android:clickable="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvSelectedTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No time selected"
-                android:layout_marginBottom="16dp"/>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/etFare"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Estimated Fare (per person)"
-                android:inputType="numberDecimal"
-                android:layout_marginBottom="32dp"/>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/PremiumEditTextStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Fare / Person"
+                            app:startIconDrawable="@android:drawable/ic_menu_send">
 
-            <Button
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etFare"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberDecimal" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/PremiumEditTextStyle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="12dp"
+                            android:hint="Seats">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etSeats"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSubmitTrip"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
+                android:layout_marginTop="32dp"
                 android:text="Post Trip"
-                android:padding="16dp"/>
+                android:textAllCaps="false"
+                android:textSize="18sp"
+                app:cornerRadius="16dp" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -151,4 +183,4 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
-</FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

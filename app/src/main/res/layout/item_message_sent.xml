@@ -4,15 +4,34 @@
     android:layout_height="wrap_content"
     android:gravity="end"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:paddingStart="64dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
-    <TextView
-        android:id="@+id/tvMessage"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="#DCF8C6"
-        android:padding="10dp"
-        android:text="Sent Message"
-        android:textColor="#000000"
-        android:textSize="16sp" />
+        android:background="@drawable/bg_message_sent"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sent Message"
+            android:textColor="@color/white"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="2dp"
+            android:text="Sent"
+            android:textColor="#CCFFFFFF"
+            android:textSize="10sp" />
+    </LinearLayout>
 </LinearLayout>

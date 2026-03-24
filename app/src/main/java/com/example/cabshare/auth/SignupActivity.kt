@@ -6,29 +6,23 @@ import android.util.Patterns
 import android.view.View
 import android.view.animation.AnimationUtils
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.cabshare.MainActivity
-import com.example.cabshare.R
 import com.example.cabshare.databinding.ActivitySignupBinding
-import com.example.cabshare.model.User
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.cabshare.viewmodel.SignupViewModel
 
 class SignupActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySignupBinding
-    private lateinit var auth: FirebaseAuth
-    private lateinit var db: FirebaseFirestore
+    private val viewModel: SignupViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySignupBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
-
-        // Apply Premium Animations
         applyAnimations()
+        setupObservers()
 
         binding.btnSignup.setOnClickListener {
             val name = binding.etName.text.toString().trim()
@@ -36,35 +30,33 @@ class SignupActivity : AppCompatActivity() {
             val password = binding.etPassword.text.toString().trim()
 
             if (validateInput(name, email, password)) {
-                showLoading(true)
-                auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            val uid = auth.currentUser?.uid ?: ""
-                            val user = User(uid, name, email)
-                            
-                            // Save user data to Firestore
-                            db.collection("users").document(uid).set(user)
-                                .addOnSuccessListener {
-                                    showLoading(false)
-                                    startActivity(Intent(this, MainActivity::class.java))
-                                    finishAffinity() // Clear activity stack
-                                }
-                                .addOnFailureListener { e ->
-                                    showLoading(false)
-                                    Toast.makeText(this, "Failed to save profile: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                        } else {
-                            showLoading(false)
-                            Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                viewModel.signup(name, email, password)
             }
         }
 
         binding.tvLoginLink.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.isLoading.observe(this) { isLoading ->
+            showLoading(isLoading)
+        }
+
+        viewModel.signupSuccess.observe(this) { success ->
+            if (success) {
+                startActivity(Intent(this, MainActivity::class.java))
+                finishAffinity()
+            }
+        }
+
+        viewModel.error.observe(this) { errorMsg ->
+            errorMsg?.let {
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+                viewModel.clearError()
+            }
         }
     }
 
