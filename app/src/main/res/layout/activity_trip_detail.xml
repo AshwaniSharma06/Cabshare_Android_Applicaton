@@ -85,15 +85,32 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_detail_chat"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
-                    android:text="Chat"
-                    app:icon="@android:drawable/stat_notify_chat" />
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipDetailAC"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AC"
+                        android:textColor="@color/white"
+                        app:chipBackgroundColor="@color/primaryColor"
+                        android:visibility="gone"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_detail_chat"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Chat"
+                        android:visibility="gone"
+                        app:icon="@android:drawable/stat_notify_chat" />
+                </LinearLayout>
+
             </RelativeLayout>
 
             <View
@@ -142,6 +159,15 @@
                     android:text="Destination Point"
                     android:textColor="@color/black" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvGenderPref"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Gender: Any"
+                android:textColor="@color/gray_text"
+                android:textSize="12sp" />
 
             <View
                 android:layout_width="match_parent"
@@ -204,11 +230,33 @@
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnJoinTrip"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:backgroundTint="@color/primaryColor"
+                android:text="Join Trip"
+                android:visibility="gone"
+                app:cornerRadius="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLeaveTrip"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:text="Leave Trip"
+                android:textColor="#E53935"
+                android:visibility="gone"
+                app:cornerRadius="16dp"
+                app:strokeColor="#E53935" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCompleteTrip"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="20dp"
-                android:text="Trip Completed"
+                android:text="Start Trip"
                 android:visibility="gone"
                 app:cornerRadius="16dp" />
 

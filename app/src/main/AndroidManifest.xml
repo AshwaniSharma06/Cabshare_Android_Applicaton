@@ -44,10 +44,13 @@
         <activity android:name=".ui.CreateTripActivity" android:label="Create Trip" />
         <activity android:name=".ui.FindTripActivity" android:label="Find Trips" />
         <activity android:name=".ui.ChatActivity" android:label="Chat" />
+        <activity android:name=".ui.ChatListActivity" android:label="My Chats" />
         <activity android:name=".ui.ProfileActivity" android:label="Profile" />
         <activity android:name=".ui.SelectLocationActivity" android:label="Select Location" />
         <activity android:name=".ui.MyTripsActivity" android:label="My Bookings" />
         <activity android:name=".ui.TripDetailActivity" android:label="Trip Details" />
+        <activity android:name=".ui.MatchesActivity" android:label="Nearby Matches" />
+        <activity android:name=".ui.NotificationActivity" android:label="Notifications" />
         
     </application>
 

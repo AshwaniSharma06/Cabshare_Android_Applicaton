@@ -41,6 +41,10 @@ class TripAdapter(
         holder.binding.tvTripFare.text = "₹${trip.fare}"
         holder.binding.tvTripSeats.text = "${trip.availableSeats} seats available"
 
+        // Preferences Badges
+        holder.binding.tvACBadge.visibility = if (trip.isAC) View.VISIBLE else View.GONE
+        holder.binding.tvGenderBadge.text = "Gender: ${trip.genderPreference}"
+
         // Load User Image
         Glide.with(context)
             .load(trip.userProfileImage)

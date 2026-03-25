@@ -72,16 +72,33 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvTripFare"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:text="₹250"
-                android:textColor="@color/primaryColor"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:gravity="end"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTripFare"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹250"
+                    android:textColor="@color/primaryColor"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvACBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AC"
+                    android:textColor="#4CAF50"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"/>
+            </LinearLayout>
         </RelativeLayout>
 
         <View
@@ -192,21 +209,36 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/tvTripSeats"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:text="2 seats available"
-                android:textColor="#4CAF50"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTripSeats"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2 seats available"
+                    android:textColor="#4CAF50"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvGenderBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Any"
+                    android:textColor="@color/gray_text"
+                    android:textSize="10sp" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <ImageButton
                     android:id="@+id/btnDeleteTrip"
@@ -218,16 +250,26 @@
                     android:visibility="gone"
                     app:tint="@color/error_red" />
 
+                <ImageButton
+                    android:id="@+id/btnChatWithDriver"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_circle_light"
+                    android:src="@android:drawable/stat_notify_chat"
+                    android:padding="8dp"
+                    app:tint="@color/primaryColor" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnJoinTrip"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:paddingHorizontal="16dp"
+                    android:layout_height="40dp"
+                    android:paddingHorizontal="20dp"
                     android:text="Join"
                     android:textAllCaps="false"
                     android:textSize="12sp"
-                    app:cornerRadius="18dp" />
+                    app:cornerRadius="20dp" />
             </LinearLayout>
         </RelativeLayout>
 

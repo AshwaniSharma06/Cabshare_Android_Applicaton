@@ -1,6 +1,7 @@
 package com.example.cabshare.ui
 
 import android.content.Intent
+import android.location.Geocoder
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -22,6 +23,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Locale
 
 class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var binding: ActivityFindTripBinding
@@ -39,13 +41,18 @@ class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
 
         setupRecyclerView()
         setupMap()
+        setupFilters()
         observeViewModel()
 
         viewModel.fetchTrips()
 
         binding.btnSearch.setOnClickListener {
             val query = binding.etSearchDestination.text.toString().trim()
-            viewModel.filterTrips(query)
+            if (query.isNotEmpty()) {
+                searchAndZoom(query)
+            } else {
+                viewModel.setQueryFilter("")
+            }
         }
 
         binding.btnToggleView.setOnClickListener {
@@ -53,6 +60,47 @@ class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         binding.btnBack.setOnClickListener { finish() }
+    }
+
+    private fun searchAndZoom(query: String) {
+        val geocoder = Geocoder(this, Locale.getDefault())
+        try {
+            val addresses = geocoder.getFromLocationName(query, 1)
+            if (!addresses.isNullOrEmpty()) {
+                val address = addresses[0]
+                val latLng = LatLng(address.latitude, address.longitude)
+                googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12f))
+                
+                // NEW: Pass coordinates to ViewModel for location-based radius matching
+                viewModel.setQueryFilter(query, address.latitude, address.longitude)
+            } else {
+                viewModel.setQueryFilter(query)
+                Toast.makeText(this, "Location not found, searching by text...", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            viewModel.setQueryFilter(query)
+        }
+    }
+
+    private fun setupFilters() {
+        binding.chipGroupFilters.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.chipAll -> {
+                    viewModel.setACFilter(false)
+                    viewModel.setGenderFilter("Any")
+                }
+                R.id.chipAC -> {
+                    viewModel.setACFilter(true)
+                }
+                R.id.chipMale -> {
+                    viewModel.setGenderFilter("Male only")
+                }
+                R.id.chipFemale -> {
+                    viewModel.setGenderFilter("Female only")
+                }
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -108,7 +156,7 @@ class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
             findViewById<View>(R.id.mapFragment).visibility = View.VISIBLE
             binding.btnToggleView.text = "Show List"
             binding.btnToggleView.setCompoundDrawablesWithIntrinsicBounds(android.R.drawable.ic_menu_agenda, 0, 0, 0)
-            viewModel.trips.value?.let { updateMapMarkers(it) }
+            viewModel.trips.value?.let { updateMapMarkers(it, shouldAnimate = false) }
         } else {
             binding.rvTrips.visibility = View.VISIBLE
             findViewById<View>(R.id.mapFragment).visibility = View.GONE
@@ -117,7 +165,7 @@ class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun updateMapMarkers(trips: List<Trip>) {
+    private fun updateMapMarkers(trips: List<Trip>, shouldAnimate: Boolean = true) {
         val map = googleMap ?: return
         map.clear()
 
@@ -148,12 +196,12 @@ class FindTripActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        if (hasPoints) {
+        // Only auto-zoom if we are not manually searching
+        if (hasPoints && shouldAnimate && binding.etSearchDestination.text.isEmpty()) {
             try {
                 val bounds = builder.build()
                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150))
             } catch (e: Exception) {
-                // Handle case where bounds cannot be built
             }
         }
     }

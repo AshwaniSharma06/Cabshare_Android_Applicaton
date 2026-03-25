@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.services)
+    id("kotlin-kapt")
 }
 
 android {
@@ -45,6 +46,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.exifinterface)
     
     // Firebase
     implementation(platform(libs.firebase.bom))
@@ -54,12 +56,13 @@ dependencies {
     implementation(libs.firebase.messaging.ktx)
 
     // Maps & Location
-    implementation(libs.play.services.maps)
-    implementation(libs.play.services.location)
+    implementation(libs.playMaps)
+    implementation(libs.playLocation)
+    implementation(libs.places)
 
     // Image Loading
     implementation(libs.glide)
-    annotationProcessor(libs.glide.compiler)
+    kapt(libs.glide.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

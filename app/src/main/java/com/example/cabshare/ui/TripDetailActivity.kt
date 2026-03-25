@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.cabshare.R
 import com.example.cabshare.databinding.ActivityTripDetailBinding
 import com.example.cabshare.model.Trip
@@ -16,6 +17,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
@@ -52,6 +54,14 @@ class TripDetailActivity : AppCompatActivity(), OnMapReadyCallback {
                 intent.putExtra("receiverName", it.userName)
                 startActivity(intent)
             }
+        }
+
+        binding.btnJoinTrip.setOnClickListener {
+            tripId?.let { viewModel.joinTrip(it) }
+        }
+
+        binding.btnLeaveTrip.setOnClickListener {
+            tripId?.let { viewModel.leaveTrip(it) }
         }
 
         binding.btnCompleteTrip.setOnClickListener {
@@ -93,37 +103,76 @@ class TripDetailActivity : AppCompatActivity(), OnMapReadyCallback {
         binding.tvDetailDestination.text = trip.destination
         binding.tvDetailFare.text = "₹${trip.fare}"
 
+        // New Preferences
+        binding.chipDetailAC.visibility = if (trip.isAC) View.VISIBLE else View.GONE
+        binding.tvGenderPref.text = "Gender Preference: ${trip.genderPreference}"
+
         // Fare Split Calculation
         val fareInt = trip.fare.toIntOrNull() ?: 0
         val passengerCount = trip.passengers.size + 1 // +1 for driver
         val splitFare = if (passengerCount > 0) fareInt / passengerCount else fareInt
         binding.tvFareSplit.text = "₹$splitFare"
 
-        // Driver Image
+        // Driver Image with cache-busting
         Glide.with(this)
             .load(trip.userProfileImage)
             .placeholder(R.drawable.ic_default_profile)
             .error(R.drawable.ic_default_profile)
+            .skipMemoryCache(true)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
             .circleCrop()
             .into(binding.ivDetailDriverImage)
 
         // Map Route update
         mMap?.let { drawRouteOnMap(it, trip) }
 
-        // Trip Status Logic
-        when (trip.status) {
-            "completed" -> {
-                binding.btnCompleteTrip.visibility = View.GONE
+        // Logic for buttons (Driver vs Passenger)
+        if (trip.userId == currentUserId) {
+            // DRIVER LOGIC
+            binding.btnJoinTrip.visibility = View.GONE
+            binding.btnLeaveTrip.visibility = View.GONE
+            binding.btnDetailChat.visibility = View.GONE
+            
+            when (trip.status) {
+                "pending" -> {
+                    binding.btnCompleteTrip.visibility = View.VISIBLE
+                    binding.btnCompleteTrip.text = "Start Trip"
+                }
+                "started" -> {
+                    binding.btnCompleteTrip.visibility = View.VISIBLE
+                    binding.btnCompleteTrip.text = "Complete Trip"
+                }
+                else -> {
+                    binding.btnCompleteTrip.visibility = View.GONE
+                }
+            }
+        } else {
+            // PASSENGER LOGIC
+            binding.btnCompleteTrip.visibility = View.GONE
+            
+            if (trip.status == "completed") {
+                binding.btnJoinTrip.visibility = View.GONE
+                binding.btnLeaveTrip.visibility = View.GONE
+                binding.btnDetailChat.visibility = View.GONE
                 if (trip.passengers.contains(currentUserId)) {
                     showRatingDialog()
                 }
-            }
-            "pending", "started" -> {
-                if (trip.userId == currentUserId) {
-                    binding.btnCompleteTrip.visibility = View.VISIBLE
-                    binding.btnCompleteTrip.text = if (trip.status == "pending") "Start Trip" else "Complete Trip"
+            } else {
+                if (trip.passengers.contains(currentUserId)) {
+                    // Joined
+                    binding.btnJoinTrip.visibility = View.GONE
+                    binding.btnLeaveTrip.visibility = View.VISIBLE
+                    binding.btnDetailChat.visibility = View.VISIBLE
                 } else {
-                    binding.btnCompleteTrip.visibility = View.GONE
+                    // Not joined
+                    binding.btnLeaveTrip.visibility = View.GONE
+                    binding.btnDetailChat.visibility = View.GONE
+                    if (trip.availableSeats > 0 && trip.status == "pending") {
+                        binding.btnJoinTrip.visibility = View.VISIBLE
+                        binding.btnJoinTrip.text = "Join Trip (${trip.availableSeats} seats left)"
+                    } else {
+                        binding.btnJoinTrip.visibility = View.GONE
+                    }
                 }
             }
         }
@@ -140,24 +189,37 @@ class TripDetailActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap?.uiSettings?.isZoomControlsEnabled = true
+        mMap?.uiSettings?.isZoomControlsEnabled = false
+        mMap?.uiSettings?.isMapToolbarEnabled = false
         viewModel.trip.value?.let { drawRouteOnMap(googleMap, it) }
     }
 
     private fun drawRouteOnMap(map: GoogleMap, trip: Trip) {
+        if (trip.pickupLat == 0.0 || trip.destLat == 0.0) return
+
         val pickup = LatLng(trip.pickupLat, trip.pickupLng)
         val dest = LatLng(trip.destLat, trip.destLng)
 
         map.clear()
         
-        map.addMarker(MarkerOptions().position(pickup).title("Pickup"))
-        map.addMarker(MarkerOptions().position(dest).title("Destination"))
+        // Custom Blue Marker for Pickup
+        map.addMarker(MarkerOptions()
+            .position(pickup)
+            .title("Pickup: ${trip.startingLocation}")
+            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)))
 
+        // Custom Red Marker for Destination
+        map.addMarker(MarkerOptions()
+            .position(dest)
+            .title("Drop-off: ${trip.destination}")
+            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)))
+
+        // Sophisticated Polyline
         map.addPolyline(
             PolylineOptions()
                 .add(pickup, dest)
-                .width(12f)
-                .color(Color.parseColor("#3B5BFF"))
+                .width(14f)
+                .color(Color.parseColor("#4A90E2"))
                 .geodesic(true)
         )
 
@@ -166,7 +228,8 @@ class TripDetailActivity : AppCompatActivity(), OnMapReadyCallback {
                 .include(pickup)
                 .include(dest)
                 .build()
-            map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 200))
+            
+            map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 250))
         } catch (e: Exception) {}
     }
 }

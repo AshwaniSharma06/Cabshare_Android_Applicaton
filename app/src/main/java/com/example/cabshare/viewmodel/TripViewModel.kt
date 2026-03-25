@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.*
 
 class TripViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -19,6 +20,13 @@ class TripViewModel : ViewModel() {
     val isLoading: LiveData<Boolean> = _isLoading
 
     private var allTrips = listOf<Trip>()
+    
+    private var currentFilterQuery = ""
+    private var currentFilterAC = false
+    private var currentFilterGender = "Any"
+    private var searchLat: Double? = null
+    private var searchLng: Double? = null
+    private val SEARCH_RADIUS_KM = 25.0 // Increased to cover city areas better
 
     fun fetchTrips() {
         _isLoading.value = true
@@ -31,62 +39,67 @@ class TripViewModel : ViewModel() {
 
                 if (snapshot != null) {
                     allTrips = snapshot.toObjects(Trip::class.java)
-                    _trips.value = allTrips
+                    applyAllFilters()
                 }
             }
     }
 
-    fun filterTrips(
-        query: String,
-        targetTime: String? = null,
-        userLat: Double? = null,
-        userLng: Double? = null,
-        radiusKm: Double = 5.0,
-        timeFlexMinutes: Int = 30
-    ) {
-        val filtered = allTrips.filter { trip ->
-            // 1. Partial Destination/Starting Match
-            val matchText = query.isEmpty() || 
-                    trip.destination.contains(query, ignoreCase = true) ||
-                    trip.startingLocation.contains(query, ignoreCase = true)
+    fun setQueryFilter(query: String, lat: Double? = null, lng: Double? = null) {
+        currentFilterQuery = query
+        searchLat = lat
+        searchLng = lng
+        applyAllFilters()
+    }
 
-            // 2. Nearby Pickup Radius
-            val matchLocation = if (userLat != null && userLng != null) {
-                calculateDistance(userLat, userLng, trip.pickupLat, trip.pickupLng) <= radiusKm
+    fun setACFilter(isAC: Boolean) {
+        currentFilterAC = isAC
+        applyAllFilters()
+    }
+
+    fun setGenderFilter(gender: String) {
+        currentFilterGender = gender
+        applyAllFilters()
+    }
+
+    private fun applyAllFilters() {
+        val filtered = allTrips.filter { trip ->
+            // 1. Text Search OR Proximity Search
+            val matchText = currentFilterQuery.isEmpty() || 
+                    trip.destination.contains(currentFilterQuery, ignoreCase = true) ||
+                    trip.startingLocation.contains(currentFilterQuery, ignoreCase = true)
+
+            val matchProximity = if (searchLat != null && searchLng != null) {
+                calculateDistance(searchLat!!, searchLng!!, trip.pickupLat, trip.pickupLng) <= SEARCH_RADIUS_KM ||
+                calculateDistance(searchLat!!, searchLng!!, trip.destLat, trip.destLng) <= SEARCH_RADIUS_KM
             } else {
-                true
+                false
             }
 
-            // 3. Time Flexibility
-            val matchTime = if (!targetTime.isNullOrEmpty()) {
-                isTimeWithinRange(trip.time, targetTime, timeFlexMinutes)
-            } else {
-                true
+            val finalLocationMatch = if (currentFilterQuery.isNotEmpty()) (matchText || matchProximity) else true
+
+            // 2. AC Filter
+            val matchAC = !currentFilterAC || trip.isAC
+
+            // 3. Gender Filter
+            val matchGender = when (currentFilterGender) {
+                "Male only" -> trip.genderPreference == "Male only"
+                "Female only" -> trip.genderPreference == "Female only"
+                else -> true
             }
             
-            matchText && matchLocation && matchTime
+            finalLocationMatch && matchAC && matchGender
         }
         _trips.value = filtered
     }
 
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
-        val results = FloatArray(1)
-        Location.distanceBetween(lat1, lon1, lat2, lon2, results)
-        return results[0] / 1000 // Convert to KM
-    }
-
-    private fun isTimeWithinRange(tripTime: String, targetTime: String, flexMinutes: Int): Boolean {
-        return try {
-            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val date1 = sdf.parse(tripTime)
-            val date2 = sdf.parse(targetTime)
-            if (date1 == null || date2 == null) return true
-            
-            val diff = Math.abs(date1.time - date2.time)
-            val diffMinutes = diff / (60 * 1000)
-            diffMinutes <= flexMinutes
-        } catch (e: Exception) {
-            true
-        }
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371.0 // Radius of the earth in km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2) * sin(dLon / 2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return r * c
     }
 }

@@ -4,11 +4,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cabshare.model.Trip
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
 class TripDetailViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
     
     private val _trip = MutableLiveData<Trip?>()
     val trip: LiveData<Trip?> = _trip
@@ -36,7 +39,11 @@ class TripDetailViewModel : ViewModel() {
     }
 
     fun updateTripStatus(tripId: String, currentStatus: String) {
-        val nextStatus = if (currentStatus == "pending") "started" else "completed"
+        val nextStatus = when (currentStatus) {
+            "pending" -> "started"
+            "started" -> "completed"
+            else -> return
+        }
         
         db.collection("trips").document(tripId).update("status", nextStatus)
             .addOnSuccessListener {
@@ -45,6 +52,46 @@ class TripDetailViewModel : ViewModel() {
             .addOnFailureListener { e ->
                 _error.value = "Failed to update status: ${e.message}"
             }
+    }
+
+    fun joinTrip(tripId: String) {
+        val userId = auth.currentUser?.uid ?: return
+        val tripDoc = db.collection("trips").document(tripId)
+
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(tripDoc)
+            val trip = snapshot.toObject(Trip::class.java) ?: return@runTransaction
+
+            if (trip.availableSeats > 0 && !trip.passengers.contains(userId)) {
+                transaction.update(tripDoc, "passengers", FieldValue.arrayUnion(userId))
+                transaction.update(tripDoc, "availableSeats", trip.availableSeats - 1)
+            } else {
+                throw Exception("No seats available or already joined")
+            }
+        }.addOnSuccessListener {
+            _statusUpdateSuccess.value = "Successfully joined the trip!"
+        }.addOnFailureListener { e ->
+            _error.value = e.message
+        }
+    }
+
+    fun leaveTrip(tripId: String) {
+        val userId = auth.currentUser?.uid ?: return
+        val tripDoc = db.collection("trips").document(tripId)
+
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(tripDoc)
+            val trip = snapshot.toObject(Trip::class.java) ?: return@runTransaction
+
+            if (trip.passengers.contains(userId)) {
+                transaction.update(tripDoc, "passengers", FieldValue.arrayRemove(userId))
+                transaction.update(tripDoc, "availableSeats", trip.availableSeats + 1)
+            }
+        }.addOnSuccessListener {
+            _statusUpdateSuccess.value = "You left the trip."
+        }.addOnFailureListener { e ->
+            _error.value = e.message
+        }
     }
 
     fun clearStatusUpdate() {

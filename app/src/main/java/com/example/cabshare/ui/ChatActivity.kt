@@ -22,6 +22,9 @@ class ChatActivity : AppCompatActivity() {
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
         val receiverId = intent.getStringExtra("receiverId")
         val receiverName = intent.getStringExtra("receiverName")
 
@@ -30,7 +33,6 @@ class ChatActivity : AppCompatActivity() {
             return
         }
 
-        supportActionBar?.title = receiverName ?: "Chat"
         binding.tvReceiverName.text = receiverName ?: "Chat"
 
         viewModel.initChat(receiverId)
@@ -71,7 +73,7 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        binding.btnBack.setOnClickListener { finish() }
+        binding.toolbar.setNavigationOnClickListener { finish() }
 
         binding.btnSend.setOnClickListener {
             val text = binding.etMessage.text.toString().trim()

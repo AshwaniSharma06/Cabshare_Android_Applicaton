@@ -91,6 +91,54 @@
                         app:tint="@color/primaryColor" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAll"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="All Rides"
+                        app:chipBackgroundColor="@color/white" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAC"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AC Only"
+                        app:chipBackgroundColor="@color/white" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipMale"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Male Only"
+                        app:chipBackgroundColor="@color/white" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFemale"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Female Only"
+                        app:chipBackgroundColor="@color/white" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

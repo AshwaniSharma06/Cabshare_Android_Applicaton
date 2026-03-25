@@ -21,5 +21,7 @@ data class Trip(
     val timestamp: Long = System.currentTimeMillis(),
     val status: String = "pending", // "pending", "started", "completed", "cancelled"
     val distance: String = "",
-    val duration: String = ""
+    val duration: String = "",
+    val isAC: Boolean = false,
+    val genderPreference: String = "Any" // "Any", "Male only", "Female only"
 )

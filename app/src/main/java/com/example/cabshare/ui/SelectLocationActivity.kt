@@ -5,14 +5,21 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Address
 import android.location.Geocoder
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
+import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cabshare.R
+import com.example.cabshare.adapter.LocationSuggestionAdapter
 import com.example.cabshare.databinding.ActivitySelectLocationBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -30,6 +37,7 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivitySelectLocationBinding
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var suggestionAdapter: LocationSuggestionAdapter
     private var selectedLatLng: LatLng? = null
     private var selectedAddress: String = ""
 
@@ -46,6 +54,9 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        setupSearch()
+        setupRecyclerView()
+
         binding.btnConfirmLocation.setOnClickListener {
             if (selectedLatLng != null) {
                 val resultIntent = Intent()
@@ -60,6 +71,96 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun setupRecyclerView() {
+        suggestionAdapter = LocationSuggestionAdapter(emptyList()) { address ->
+            onSuggestionSelected(address)
+        }
+        binding.rvSuggestions.layoutManager = LinearLayoutManager(this)
+        binding.rvSuggestions.adapter = suggestionAdapter
+    }
+
+    private fun onSuggestionSelected(address: Address) {
+        val latLng = LatLng(address.latitude, address.longitude)
+        mMap.clear()
+        mMap.addMarker(MarkerOptions().position(latLng).title(address.featureName))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+        
+        selectedLatLng = latLng
+        selectedAddress = address.getAddressLine(0)
+        binding.tvSelectedAddress.text = selectedAddress
+        
+        binding.rvSuggestions.visibility = View.GONE
+        binding.etSearch.setText(address.featureName)
+        
+        // Hide keyboard
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etSearch.windowToken, 0)
+    }
+
+    private fun setupSearch() {
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val query = s.toString().trim()
+                if (query.length > 2) {
+                    updateSuggestions(query)
+                } else {
+                    binding.rvSuggestions.visibility = View.GONE
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        binding.etSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                val query = binding.etSearch.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    searchLocation(query)
+                }
+                true
+            } else {
+                false
+            }
+        }
+
+        binding.btnSearch.setOnClickListener {
+            val query = binding.etSearch.text.toString().trim()
+            if (query.isNotEmpty()) {
+                searchLocation(query)
+            }
+        }
+    }
+
+    private fun updateSuggestions(query: String) {
+        val geocoder = Geocoder(this, Locale.getDefault())
+        try {
+            // In production, this should be in a background thread or use a debounce mechanism
+            val addressList = geocoder.getFromLocationName(query, 5)
+            if (!addressList.isNullOrEmpty()) {
+                suggestionAdapter.updateSuggestions(addressList)
+                binding.rvSuggestions.visibility = View.VISIBLE
+            } else {
+                binding.rvSuggestions.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            binding.rvSuggestions.visibility = View.GONE
+        }
+    }
+
+    private fun searchLocation(query: String) {
+        val geocoder = Geocoder(this, Locale.getDefault())
+        try {
+            val addressList = geocoder.getFromLocationName(query, 1)
+            if (!addressList.isNullOrEmpty()) {
+                onSuggestionSelected(addressList[0])
+            } else {
+                Toast.makeText(this, "Location not found", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         
@@ -71,6 +172,7 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
             mMap.addMarker(MarkerOptions().position(latLng).title("Selected Location"))
             selectedLatLng = latLng
             updateAddress(latLng)
+            binding.rvSuggestions.visibility = View.GONE
         }
 
         enableMyLocation()
@@ -90,7 +192,6 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
 
     @SuppressLint("MissingPermission")
     private fun getDeviceLocation() {
-        // Use getCurrentLocation instead of lastLocation for a fresh fix
         fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
             .addOnSuccessListener { location ->
                 if (location != null) {

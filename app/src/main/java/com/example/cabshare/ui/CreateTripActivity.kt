@@ -10,8 +10,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import com.example.cabshare.R
 import com.example.cabshare.databinding.ActivityCreateTripBinding
 import com.example.cabshare.viewmodel.CreateTripViewModel
+import java.text.SimpleDateFormat
 import java.util.*
 
 class CreateTripActivity : AppCompatActivity() {
@@ -20,6 +22,7 @@ class CreateTripActivity : AppCompatActivity() {
     
     private var selectedDate = ""
     private var selectedTime = ""
+    private var seatCount = 1
     
     private var pickupLat = 0.0
     private var pickupLng = 0.0
@@ -53,6 +56,9 @@ class CreateTripActivity : AppCompatActivity() {
         binding = ActivityCreateTripBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+
         setupObservers()
         setupListeners()
         viewModel.fetchCurrentUser()
@@ -81,16 +87,21 @@ class CreateTripActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.toolbar.setNavigationOnClickListener { finish() }
 
+        // Open Map Selector for both clicking the EditText or the End Icon
+        binding.etStartingLocation.isFocusable = false
         binding.etStartingLocation.setOnClickListener {
-            val intent = Intent(this, SelectLocationActivity::class.java)
-            intent.putExtra("hint", "Select Pickup")
-            selectPickupLauncher.launch(intent)
+            openMapSelector("Select Pickup", selectPickupLauncher)
+        }
+        binding.tilStartingLocation.setEndIconOnClickListener {
+            openMapSelector("Select Pickup", selectPickupLauncher)
         }
 
+        binding.etDestination.isFocusable = false
         binding.etDestination.setOnClickListener {
-            val intent = Intent(this, SelectLocationActivity::class.java)
-            intent.putExtra("hint", "Select Destination")
-            selectDestLauncher.launch(intent)
+            openMapSelector("Select Destination", selectDestLauncher)
+        }
+        binding.tilDestination.setEndIconOnClickListener {
+            openMapSelector("Select Destination", selectDestLauncher)
         }
         
         binding.etDate.setOnClickListener {
@@ -104,9 +115,28 @@ class CreateTripActivity : AppCompatActivity() {
         binding.etTime.setOnClickListener {
             val c = Calendar.getInstance()
             TimePickerDialog(this, { _, hour, minute ->
-                selectedTime = String.format("%02d:%02d", hour, minute)
+                val timeCalendar = Calendar.getInstance()
+                timeCalendar.set(Calendar.HOUR_OF_DAY, hour)
+                timeCalendar.set(Calendar.MINUTE, minute)
+                
+                val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                selectedTime = sdf.format(timeCalendar.time)
                 binding.etTime.setText(selectedTime)
-            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show()
+            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show()
+        }
+
+        binding.btnMinusSeat.setOnClickListener {
+            if (seatCount > 1) {
+                seatCount--
+                binding.tvSeatCount.text = seatCount.toString()
+            }
+        }
+
+        binding.btnPlusSeat.setOnClickListener {
+            if (seatCount < 7) {
+                seatCount++
+                binding.tvSeatCount.text = seatCount.toString()
+            }
         }
 
         binding.btnSubmitTrip.setOnClickListener {
@@ -114,21 +144,35 @@ class CreateTripActivity : AppCompatActivity() {
         }
     }
 
+    private fun openMapSelector(hint: String, launcher: androidx.activity.result.ActivityResultLauncher<Intent>) {
+        val intent = Intent(this, SelectLocationActivity::class.java)
+        intent.putExtra("hint", hint)
+        launcher.launch(intent)
+    }
+
     private fun submitTrip() {
         val startingLoc = binding.etStartingLocation.text.toString().trim()
         val destination = binding.etDestination.text.toString().trim()
         val fare = binding.etFare.text.toString().trim()
-        val seatsStr = binding.etSeats.text.toString().trim()
+        val seatsStr = seatCount.toString()
+        val isAC = binding.switchAC.isChecked
         
-        if (validateInput(startingLoc, destination, fare, seatsStr)) {
+        val genderPreference = when (binding.toggleGender.checkedButtonId) {
+            R.id.btnGenderMale -> "Male only"
+            R.id.btnGenderFemale -> "Female only"
+            else -> "Any"
+        }
+        
+        if (validateInput(startingLoc, destination, fare)) {
             viewModel.submitTrip(
                 startingLoc, destination, pickupLat, pickupLng, 
-                destLat, destLng, selectedDate, selectedTime, fare, seatsStr
+                destLat, destLng, selectedDate, selectedTime, fare, seatsStr,
+                isAC, genderPreference
             )
         }
     }
 
-    private fun validateInput(startingLoc: String, destination: String, fare: String, seats: String): Boolean {
+    private fun validateInput(startingLoc: String, destination: String, fare: String): Boolean {
         var isValid = true
 
         if (startingLoc.isEmpty()) {
@@ -149,10 +193,6 @@ class CreateTripActivity : AppCompatActivity() {
         }
         if (fare.isEmpty()) {
             binding.etFare.error = "Required"
-            isValid = false
-        }
-        if (seats.isEmpty()) {
-            binding.etSeats.error = "Required"
             isValid = false
         }
 
