@@ -33,8 +33,9 @@ class ChatListActivity : AppCompatActivity() {
         adapter = ChatListAdapter { chat ->
             val intent = Intent(this, ChatActivity::class.java)
             intent.putExtra("chatId", chat.chatId)
-            intent.putExtra("otherUserId", chat.users.first { it != auth.currentUser?.uid })
-            intent.putExtra("otherUserName", chat.otherUserName)
+            // Use "receiverId" to match ChatActivity's expectation
+            intent.putExtra("receiverId", chat.users.first { it != auth.currentUser?.uid })
+            intent.putExtra("receiverName", chat.otherUserName)
             startActivity(intent)
         }
         binding.rvChatList.layoutManager = LinearLayoutManager(this)
@@ -50,7 +51,10 @@ class ChatListActivity : AppCompatActivity() {
             .orderBy("lastTimestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
                 binding.progressBar.visibility = View.GONE
-                if (e != null) return@addSnapshotListener
+                if (e != null) {
+                    // This error usually indicates a missing index.
+                    return@addSnapshotListener
+                }
 
                 val chats = mutableListOf<Chat>()
                 snapshots?.forEach { doc ->

@@ -10,10 +10,14 @@ import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cabshare.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
@@ -50,45 +54,50 @@ class ProfileViewModel : ViewModel() {
         val uid = auth.currentUser?.uid ?: return
         _isLoading.value = true
 
-        if (selectedImageUri != null) {
-            try {
-                // 1. Get orientation from Exif
-                val orientation = getOrientation(contentResolver, selectedImageUri)
+        viewModelScope.launch {
+            if (selectedImageUri != null) {
+                try {
+                    val imageData = withContext(Dispatchers.IO) {
+                        // 1. Get orientation from Exif
+                        val orientation = getOrientation(contentResolver, selectedImageUri)
 
-                // 2. Decode bitmap
-                val inputStream: InputStream? = contentResolver.openInputStream(selectedImageUri)
-                val originalBitmap = BitmapFactory.decodeStream(inputStream)
-                inputStream?.close()
+                        // 2. Decode bitmap
+                        val inputStream: InputStream? = contentResolver.openInputStream(selectedImageUri)
+                        val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                        inputStream?.close()
 
-                if (originalBitmap == null) {
+                        if (originalBitmap == null) return@withContext null
+
+                        // 3. Rotate bitmap if needed
+                        val rotatedBitmap = rotateBitmap(originalBitmap, orientation)
+
+                        // 4. Center Crop to Square (1:1 Ratio)
+                        val croppedBitmap = centerCrop(rotatedBitmap)
+
+                        // 5. Resize to a standard profile size
+                        val finalBitmap = Bitmap.createScaledBitmap(croppedBitmap, 400, 400, true)
+
+                        // 6. Compress and convert to Base64
+                        val outputStream = ByteArrayOutputStream()
+                        finalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                        val byteArray = outputStream.toByteArray()
+                        val base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                        "data:image/jpeg;base64,$base64Image"
+                    }
+
+                    if (imageData != null) {
+                        updateUserInFirestore(uid, name, bio, imageData)
+                    } else {
+                        _isLoading.value = false
+                        _statusMessage.value = "Could not decode image"
+                    }
+                } catch (e: Exception) {
                     _isLoading.value = false
-                    _statusMessage.value = "Could not decode image"
-                    return
+                    _statusMessage.value = "Image processing failed: ${e.localizedMessage}"
                 }
-
-                // 3. Rotate bitmap if needed
-                val rotatedBitmap = rotateBitmap(originalBitmap, orientation)
-
-                // 4. Center Crop to Square (1:1 Ratio)
-                val croppedBitmap = centerCrop(rotatedBitmap)
-
-                // 5. Resize to a standard profile size
-                val finalBitmap = Bitmap.createScaledBitmap(croppedBitmap, 400, 400, true)
-
-                // 6. Compress and convert to Base64
-                val outputStream = ByteArrayOutputStream()
-                finalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-                val byteArray = outputStream.toByteArray()
-                val base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT)
-                val imageData = "data:image/jpeg;base64,$base64Image"
-
-                updateUserInFirestore(uid, name, bio, imageData)
-            } catch (e: Exception) {
-                _isLoading.value = false
-                _statusMessage.value = "Image processing failed: ${e.localizedMessage}"
+            } else {
+                updateUserInFirestore(uid, name, bio, _user.value?.profileImageUrl)
             }
-        } else {
-            updateUserInFirestore(uid, name, bio, _user.value?.profileImageUrl)
         }
     }
 

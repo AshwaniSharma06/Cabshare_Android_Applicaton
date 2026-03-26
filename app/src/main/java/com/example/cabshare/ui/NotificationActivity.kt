@@ -1,5 +1,6 @@
 package com.example.cabshare.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
@@ -34,7 +35,21 @@ class NotificationActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = NotificationAdapter { notification ->
             viewModel.markAsRead(notification.notificationId)
-            // Navigate based on notification type if needed
+            
+            // Handle notification clicks based on type
+            when (notification.type) {
+                "match_found" -> {
+                    startActivity(Intent(this, MatchesActivity::class.java))
+                }
+                "trip_posted", "trip_booked" -> {
+                    val intent = Intent(this, MyTripsActivity::class.java)
+                    startActivity(intent)
+                }
+                "new_message" -> {
+                    val intent = Intent(this, ChatListActivity::class.java)
+                    startActivity(intent)
+                }
+            }
         }
         binding.rvNotifications.layoutManager = LinearLayoutManager(this)
         binding.rvNotifications.adapter = adapter

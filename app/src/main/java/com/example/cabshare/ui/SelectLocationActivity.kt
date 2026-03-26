@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -17,6 +18,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.cabshare.R
 import com.example.cabshare.adapter.LocationSuggestionAdapter
@@ -30,6 +32,11 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
 class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -40,6 +47,7 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var suggestionAdapter: LocationSuggestionAdapter
     private var selectedLatLng: LatLng? = null
     private var selectedAddress: String = ""
+    private var searchJob: Job? = null
 
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
@@ -86,7 +94,7 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
         
         selectedLatLng = latLng
-        selectedAddress = address.getAddressLine(0)
+        selectedAddress = address.getAddressLine(0) ?: "Unknown Location"
         binding.tvSelectedAddress.text = selectedAddress
         
         binding.rvSuggestions.visibility = View.GONE
@@ -102,8 +110,12 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val query = s.toString().trim()
+                searchJob?.cancel()
                 if (query.length > 2) {
-                    updateSuggestions(query)
+                    searchJob = lifecycleScope.launch {
+                        delay(500) // Debounce
+                        updateSuggestions(query)
+                    }
                 } else {
                     binding.rvSuggestions.visibility = View.GONE
                 }
@@ -131,11 +143,19 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun updateSuggestions(query: String) {
+    private suspend fun updateSuggestions(query: String) {
         val geocoder = Geocoder(this, Locale.getDefault())
         try {
-            // In production, this should be in a background thread or use a debounce mechanism
-            val addressList = geocoder.getFromLocationName(query, 5)
+            val addressList = withContext(Dispatchers.IO) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // This is still a bit tricky as the new API is callback based, 
+                    // but we can use the old one on IO thread for now as it's common practice
+                    geocoder.getFromLocationName(query, 5)
+                } else {
+                    geocoder.getFromLocationName(query, 5)
+                }
+            }
+            
             if (!addressList.isNullOrEmpty()) {
                 suggestionAdapter.updateSuggestions(addressList)
                 binding.rvSuggestions.visibility = View.VISIBLE
@@ -148,16 +168,20 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun searchLocation(query: String) {
-        val geocoder = Geocoder(this, Locale.getDefault())
-        try {
-            val addressList = geocoder.getFromLocationName(query, 1)
-            if (!addressList.isNullOrEmpty()) {
-                onSuggestionSelected(addressList[0])
-            } else {
-                Toast.makeText(this, "Location not found", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            val geocoder = Geocoder(this@SelectLocationActivity, Locale.getDefault())
+            try {
+                val addressList = withContext(Dispatchers.IO) {
+                    geocoder.getFromLocationName(query, 1)
+                }
+                if (!addressList.isNullOrEmpty()) {
+                    onSuggestionSelected(addressList[0])
+                } else {
+                    Toast.makeText(this@SelectLocationActivity, "Location not found", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@SelectLocationActivity, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -223,15 +247,19 @@ class SelectLocationActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateAddress(latLng: LatLng) {
-        val geocoder = Geocoder(this, Locale.getDefault())
-        try {
-            val addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
-            if (!addresses.isNullOrEmpty()) {
-                selectedAddress = addresses[0].getAddressLine(0)
-                binding.tvSelectedAddress.text = selectedAddress
+        lifecycleScope.launch {
+            val geocoder = Geocoder(this@SelectLocationActivity, Locale.getDefault())
+            try {
+                val addresses = withContext(Dispatchers.IO) {
+                    geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+                }
+                if (!addresses.isNullOrEmpty()) {
+                    selectedAddress = addresses[0].getAddressLine(0)
+                    binding.tvSelectedAddress.text = selectedAddress
+                }
+            } catch (e: Exception) {
+                binding.tvSelectedAddress.text = "Lat: ${latLng.latitude}, Lon: ${latLng.longitude}"
             }
-        } catch (e: Exception) {
-            binding.tvSelectedAddress.text = "Lat: ${latLng.latitude}, Lon: ${latLng.longitude}"
         }
     }
 }

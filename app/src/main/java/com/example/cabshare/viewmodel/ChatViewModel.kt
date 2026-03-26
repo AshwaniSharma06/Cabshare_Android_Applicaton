@@ -5,8 +5,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.cabshare.model.Message
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
+import java.util.Date
 
 class ChatViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
@@ -51,7 +54,6 @@ class ChatViewModel : ViewModel() {
                     val msgList = snapshot.toObjects(Message::class.java)
                     _messages.value = msgList
                     
-                    // Mark as seen logic (could be done here or in Activity)
                     val currentUserId = auth.currentUser?.uid
                     msgList.forEach { msg ->
                         if (msg.receiverId == currentUserId && !msg.seen) {
@@ -69,19 +71,34 @@ class ChatViewModel : ViewModel() {
     fun sendMessage(text: String) {
         val senderId = auth.currentUser?.uid ?: return
         val messageRef = db.collection("messages").document()
+        
+        // Use null for timestamp to let @ServerTimestamp handle it automatically
         val message = Message(
             messageId = messageRef.id,
             chatId = chatId,
             senderId = senderId,
             receiverId = receiverId,
             message = text,
-            timestamp = null, // Firestore server timestamp preferred but using local or null handled by Firestore
+            timestamp = null, 
             seen = false
         )
 
-        messageRef.set(message).addOnFailureListener { e ->
+        messageRef.set(message).addOnSuccessListener {
+            updateChatSummary(text, senderId)
+        }.addOnFailureListener { e ->
             _error.value = "Failed to send: ${e.message}"
         }
+    }
+
+    private fun updateChatSummary(lastMessage: String, senderId: String) {
+        val chatData = mapOf(
+            "lastMessage" to lastMessage,
+            "lastTimestamp" to FieldValue.serverTimestamp(),
+            "users" to listOf(senderId, receiverId)
+        )
+        
+        db.collection("chats").document(chatId)
+            .set(chatData, SetOptions.merge())
     }
 
     private fun listenForTypingStatus() {

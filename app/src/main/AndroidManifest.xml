@@ -51,7 +51,8 @@
         <activity android:name=".ui.TripDetailActivity" android:label="Trip Details" />
         <activity android:name=".ui.MatchesActivity" android:label="Nearby Matches" />
         <activity android:name=".ui.NotificationActivity" android:label="Notifications" />
-        
+        <activity android:name=".ui.HelpActivity" android:label="Help &amp; Support" />
+
     </application>
 
 </manifest>

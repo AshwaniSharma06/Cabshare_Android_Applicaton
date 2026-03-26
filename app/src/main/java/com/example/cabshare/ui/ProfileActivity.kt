@@ -69,6 +69,10 @@ class ProfileActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        binding.cvHelpSupport.setOnClickListener {
+            startActivity(Intent(this, HelpActivity::class.java))
+        }
+
         binding.cvLogout.setOnClickListener {
             FirebaseAuth.getInstance().signOut()
             val intent = Intent(this, LoginActivity::class.java)
