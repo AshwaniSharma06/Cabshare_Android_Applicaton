@@ -1,17 +1,23 @@
+# Android Studio / IDE
+.idea/
+.gradle/
+/build/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.kotlin/
+
+# Other Projects (Ignore these to keep CabShare repo clean)
+/OG/
+/TaskManagerApp/
+/flappybird/
+/flappybird2/
+/helloworld/
+
+# Local configuration
 local.properties
 google-services.json
 app/google-services.json
+
+# Secrets
+.env
+*.jks
+*.keystore
